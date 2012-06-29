@@ -2,9 +2,9 @@
 //
 
 #include "stdafx.h"
-#include <exception.h>
-#include <tplib.h>
-#include <cmdlineparser.h>
+#include <tplib/include/exception.h>
+#include <tplib/include/tplib.h>
+#include <tplib/include/cmdlineparser.h>
 #include <algorithm>
 #include <vector>
 #include <map>
