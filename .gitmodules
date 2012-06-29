@@ -1,0 +1,3 @@
+[submodule "thirdsrc/tplib"]
+	path = thirdsrc/tplib
+	url = git://github.com/timepp/tplib.git
