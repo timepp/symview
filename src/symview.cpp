@@ -442,14 +442,12 @@ int main_internal(int argc, wchar_t* argv[])
 	SETOP(L"½âÎöÃüÁîĞĞ");
 
 	tp::cmdline_parser parser;
-	parser.register_option(L"m", L"matcher", tp::cmdline_parser::param_type_string, &g_matcher);
+	parser.register_string_option(L"m", L"matcher", &g_matcher);
 
-	tp::cmdline_parser::strlist_t targets;
 	try
 	{
 		parser.parse(argc, argv);
-		targets = parser.get_targets();
-		tp::throw_when(targets.size() < 1, L"");
+		tp::throw_when(parser.get_target_count() < 1, L"");
 	}
 	catch (tp::exception& e)
 	{
@@ -463,11 +461,11 @@ int main_internal(int argc, wchar_t* argv[])
 	DWORD opt = ::SymSetOptions(SYMOPT_LOAD_LINES);
 	//::SymSetOptions(::SymGetOptions() | SYMOPT_LOAD_LINES);
 
-	for (tp::cmdline_parser::strlist_t::const_iterator it = targets.begin(); it != targets.end(); ++it)
+	for (size_t i = 0; i < parser.get_target_count(); i++)
 	{
 		try
 		{
-			std::wstring pdbfile = *it;
+			std::wstring pdbfile = parser.get_target(i);
 			std::wstring outfile = pdbfile + L".csv";
 			symlist_t lst;
 			EnumPdbSymbol(pdbfile, EnumProc, &lst);
