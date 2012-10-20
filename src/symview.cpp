@@ -13,6 +13,8 @@
 #include <numeric>
 #include "templatesimplify.h"
 
+#include <time.h>
+
 #undef max
 #undef min
 
@@ -214,8 +216,37 @@ const wchar_t* ExtractByte(const wchar_t* p, int* val)
 	}
 }
 
-void UnDecorateString(const wchar_t* name, wchar_t* buf, size_t buflen)
+wchar_t* EncodeChar(wchar_t ch, wchar_t (&buf)[16])
 {
+	wchar_t* p = buf;
+
+	// 特殊符号
+	switch (ch)
+	{
+	case L'\t': return L"\\t";
+	case L'\n': return L"\\n";
+	case L'\r': return L"\\r";
+	case L'\\': return L"\\\\";
+	default: break;
+	}
+
+	if (ch > 0 && ch < 0x20 || ch > 0x7F && ch <= 0xFF)
+	{
+		_snwprintf_s(buf, _TRUNCATE, L"\\x%02X", ch);
+	}
+	else
+	{
+		buf[0] = ch;
+		buf[1] = L'\0';
+	}
+
+	return buf;
+}
+
+std::wstring UnDecorateString(const wchar_t* name)
+{
+	std::wstring ret;
+
 	name += 6;
 	bool ansi = (*name == L'0');  // *name==0 : ansi, *name==1 : unicode
 
@@ -229,6 +260,7 @@ void UnDecorateString(const wchar_t* name, wchar_t* buf, size_t buflen)
 	p++;
 
 	// 真正的内容啦
+	wchar_t buf[16];
 	int t;
 	if (ansi)
 	{
@@ -236,7 +268,7 @@ void UnDecorateString(const wchar_t* name, wchar_t* buf, size_t buflen)
 		while (q && *q != L'@')
 		{
 			q = ExtractByte(q, &t);
-			*buf++ = t;
+			ret += EncodeChar(t, buf);
 		}
 	}
 	else
@@ -249,11 +281,11 @@ void UnDecorateString(const wchar_t* name, wchar_t* buf, size_t buflen)
 			wt = t << 8;
 			q = ExtractByte(q, &t);
 			wt += t;
-			*buf++ = wt;
+			ret += EncodeChar(wt, buf);
 		}
 	}
 
-	*buf = L'\0';
+	return ret;
 }
 
 BOOL CALLBACK EnumProc(PSYMBOL_INFOW info, ULONG len, PVOID param)
@@ -270,20 +302,22 @@ BOOL CALLBACK EnumProc(PSYMBOL_INFOW info, ULONG len, PVOID param)
 	wchar_t buffer2[4096];
 
 	// undecorate
+	std::wstring undstr;
 	const wchar_t* undecorateName = info->Name;
 	if (*undecorateName == L'?')
 	{
 		if (wcsncmp(undecorateName, L"??_C@", 5) == 0)
 		{
 			// UndecorateSymbolName不管STRING,所以我们只好自己解析
-			UnDecorateString(info->Name, buffer1, _countof(buffer1));
+			undstr = UnDecorateString(info->Name);
+			undecorateName = undstr.c_str();
 			sym.tag = 10000;
 		}
 		else
 		{
 			::UnDecorateSymbolNameW(info->Name, buffer1, _countof(buffer1), 0);
+			undecorateName = buffer1;
 		}
-		undecorateName = buffer1;
 	}
 
 	// simplify
@@ -415,18 +449,11 @@ int main_internal(int argc, wchar_t* argv[])
 	{
 		parser.parse(argc, argv);
 		targets = parser.get_targets();
-		if (targets.size() < 1)
-		{
-			tp::throw_custom_error(L"");
-		}
+		tp::throw_when(targets.size() < 1, L"");
 	}
 	catch (tp::exception& e)
 	{
-		const wchar_t* msg = e.err->desc().c_str();
-		if (*msg)
-		{
-			wprintf(L"%s\n\n", msg);
-		}
+		wprintf(L"%s\n\n", e.message.c_str());
 		print_help(getname(argv[0]), parser);
 		return 1;
 	}
@@ -448,7 +475,7 @@ int main_internal(int argc, wchar_t* argv[])
 		}
 		catch (tp::exception& e)
 		{
-			wprintf(L"错误: %s\n当前操作: %s\n", e.err->desc().c_str(), e.oplist.c_str());
+			wprintf(L"错误: %s\n当前操作: %s\n", e.message.c_str(), e.oplist.c_str());
 		}
 	}
 
@@ -466,7 +493,7 @@ int wmain(int argc, wchar_t* argv[])
 	}
 	catch (tp::exception& e)
 	{
-		wprintf(L"错误: %s\n当前操作: %s\n", e.err->desc().c_str(), e.oplist.c_str());
+		wprintf(L"错误: %s\n当前操作: %s\n", e.message.c_str(), e.oplist.c_str());
 		return -1;
 	}
 
