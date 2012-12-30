@@ -96,12 +96,12 @@ const char* GetSymType(const syminfo& s)
 
 void UpdateSymCountDisplay(int count)
 {
-	wprintf(L"\r已处理符号数:%d", count);
+	wprintf(L"\rprocessed symbols:%d", count);
 }
 
 void OutputResult(const symlist_t& lst, const wchar_t* path)
 {
-	OPBLOCK(L"保存结果");
+	OPBLOCK(L"save result");
 
 	symlist_t syms = lst;
 	struct inner
@@ -119,14 +119,14 @@ void OutputResult(const symlist_t& lst, const wchar_t* path)
 		}
 	};
 
-	SET_LONG_OP(L"排序");
+	SET_LONG_OP(L"sort");
 	std::sort(syms.begin(), syms.end(), &inner::sort_by_addr);
 
-	SETOP(L"打开文件");
+	SETOP(L"open result file");
 	FILE* fp = _wfopen(path, L"wt");
 	tp::throw_stderr_when(fp == NULL);
 
-	SET_LONG_OP(L"写入文件");
+	SET_LONG_OP(L"write result file");
 	fprintf_s(fp, "SymbolType,Address,Length,Occupied,SymbolName,SourceFile,SourceLine\n"); 
 	for (symlist_t::const_iterator it = syms.begin(); it != syms.end(); ++it)
 	{
@@ -159,11 +159,11 @@ void OutputResult(const symlist_t& lst, const wchar_t* path)
 			symtype, it->addr, len, occupied, (const wchar_t*)CSV_Safe_String(it->name.c_str()), it->file.c_str(), it->line);
 	}
 
-	SETOP(L"关闭文件");
+	SETOP(L"close result file");
 	if (fp != stdout)
 	{
 		fclose(fp);
-		wprintf(L"已生成文件：%s\n", path);
+		wprintf(L"result are saved to file：%s\n", path);
 	}
 }
 
@@ -362,24 +362,24 @@ BOOL CALLBACK EnumProc(PSYMBOL_INFOW info, ULONG len, PVOID param)
 
 void EnumPdbSymbol(std::wstring& pdbfile, PSYM_ENUMERATESYMBOLS_CALLBACKW callback, symlist_t* list)
 {
-	OPBLOCK(std::wstring(tp::cz(L"处理PDB文件[%s]", pdbfile.c_str())));
-	wprintf(L"处理文件[%s]\n", pdbfile.c_str());
+	OPBLOCK(std::wstring(tp::cz(L"process file [%s]", pdbfile.c_str())));
+	wprintf(L"process file[%s]\n", pdbfile.c_str());
 
 	DWORD len = 0;
 
-	SETOP(L"打开文件");
-	HANDLE file = ::CreateFileW(pdbfile.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	SETOP(L"open file");
+	HANDLE file = ::CreateFileW(pdbfile.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	tp::throw_winerr_when(file == INVALID_HANDLE_VALUE);
 
-	SETOP(L"读取文件长度");
+	SETOP(L"read file length");
 	len = ::GetFileSize(file, NULL);
 
 
-	SETOP(L"加载PDB文件");
-	DWORD64 base = ::SymLoadModule64(hProcess, file, const_cast<char*>((const char *)tp::w2a(pdbfile.c_str())), NULL, 0x10000000, len);
+	SETOP(L"load file");
+	DWORD64 base = ::SymLoadModule64(GetCurrentProcess(), file, NULL, NULL, 0x10000000, len);
 	ENSURE(base > 0);
 
-	SETOP(L"获取PDB信息");
+	SETOP(L"get symbol information");
 	IMAGEHLP_MODULE64 ModuleInfo; 
 	memset(&ModuleInfo, 0, sizeof(ModuleInfo) ); 
 	ModuleInfo.SizeOfStruct = sizeof(ModuleInfo); 
@@ -392,13 +392,13 @@ void EnumPdbSymbol(std::wstring& pdbfile, PSYM_ENUMERATESYMBOLS_CALLBACKW callba
 	context.symCount = 0;
 	list->reserve(100000);
 
-	SETOP(L"遍历PDB文件中的符号");
-	ENSURE(::SymEnumSymbolsW(hProcess, base, g_matcher.c_str(), callback, &context));
+	SETOP(L"enum symbols");
+	ENSURE(::SymEnumSymbolsW(hProcess, base, NULL, callback, &context));
 
-	SETOP(L"卸载PDB文件");
+	SETOP(L"unload file");
 	ENSURE(::SymUnloadModule64(hProcess, base));
 
-	SETOP(L"关闭PDB文件");
+	SETOP(L"close file");
 	::CloseHandle(file);
 
 	UpdateSymCountDisplay(context.symCount);
@@ -408,23 +408,24 @@ void EnumPdbSymbol(std::wstring& pdbfile, PSYM_ENUMERATESYMBOLS_CALLBACKW callba
 void print_help(const wchar_t* progname, tp::cmdline_parser& parser)
 {
 	wprintf(
-		L"%s: 通过分析PDB显示EXE/DLL中函数和变量的大小信息。\n"
-		L"用法: %s PDBFile\n"
+		L"symview: view symbols in EXE or DLL. \n"
+		L"usage: symview <file>(exe,dll,...)\n"
+		L"generates <file>.symbols.csv, in CSV compitable format. \n"
+		L"each line represents a symbol, fields(symbol properties) are separates by `,', including:\n"
+		L"  symbol type\n"
+		L"  address(offset in the binary)\n"
+		L"  length in bytes\n"
+		L"  occupy in bytes\n"
+		L"  name\n"
+		L"  source file\n"
+		L"  source line\n"
+		L"symbols are sorted by their addresses.\n"
+		L"note: corresponding pdb files must exists in the some direcotry.\n"
+		L"example:\n"
+		L"symview bdcommon.dll\n"
+		L"this command analyze `bdcommon.dll' and `bdcommon.pdb', then generates result in `bdcommon.dll.symbols.csv'\n"
 		L"\n"
-		L"输出<PDBFile>.csv文件，每一行代表一个函数/全局变量的属性，逗号分隔，字段含意依次为：\n"
-		L"　　类型(函数还是全局变量)\n"
-		L"　　地址\n"
-		L"　　大小（字节）\n"
-		L"　　实际占用大小（字节）\n"
-		L"　　名字\n"
-		L"　　源代码文件\n"
-		L"　　源代码行号\n"
-		L"输出按地址从小到大排序\n"
-		L"\n"
-		L"举例：\n"
-		L"codesize bdcommon.pdb\n"
-		L"以上命令分析bdcommon.pdb，生成bdcommon.pdb.csv文件.\n",
-		progname, progname
+		L"visit: https://github.com/timepp/symview \n"
 	);
 }
 
@@ -436,10 +437,10 @@ const wchar_t* getname(const wchar_t* path)
 
 int main_internal(int argc, wchar_t* argv[])
 {
-	setlocale(LC_ALL, "");
+	setlocale(LC_ALL, "chs");
 
 	hProcess = ::GetCurrentProcess();
-	SETOP(L"解析命令行");
+	SETOP(L"parse command line");
 
 	tp::cmdline_parser parser;
 	parser.register_string_option(L"m", L"matcher", &g_matcher);
@@ -451,33 +452,34 @@ int main_internal(int argc, wchar_t* argv[])
 	}
 	catch (tp::exception& e)
 	{
-		wprintf(L"%s\n\n", e.message.c_str());
+		if (e.message.length())
+			wprintf(L"%s\n\n", e.message.c_str());
 		print_help(getname(argv[0]), parser);
 		return 1;
 	}
 
-	SETOP(L"初始化符号环境");
+	SETOP(L"init symbol service");
 	ENSURE(::SymInitialize(hProcess, NULL, FALSE));
-	DWORD opt = ::SymSetOptions(SYMOPT_LOAD_LINES);
-	//::SymSetOptions(::SymGetOptions() | SYMOPT_LOAD_LINES);
+	DWORD opt = ::SymGetOptions();
+	::SymSetOptions(0 | SYMOPT_LOAD_LINES);
 
 	for (size_t i = 0; i < parser.get_target_count(); i++)
 	{
 		try
 		{
 			std::wstring pdbfile = parser.get_target(i);
-			std::wstring outfile = pdbfile + L".csv";
+			std::wstring outfile = pdbfile + L".symbols.csv";
 			symlist_t lst;
 			EnumPdbSymbol(pdbfile, EnumProc, &lst);
 			OutputResult(lst, outfile.c_str());
 		}
 		catch (tp::exception& e)
 		{
-			wprintf(L"错误: %s\n当前操作: %s\n", e.message.c_str(), e.oplist.c_str());
+			wprintf(L"error: %s\ncurrent operation: %s\n", e.message.c_str(), e.oplist.c_str());
 		}
 	}
 
-	SETOP(L"退出符号环境");
+	SETOP(L"uninit symbol service");
 	ENSURE(::SymCleanup(hProcess));
 
 	return 0;
@@ -491,8 +493,9 @@ int wmain(int argc, wchar_t* argv[])
 	}
 	catch (tp::exception& e)
 	{
-		wprintf(L"错误: %s\n当前操作: %s\n", e.message.c_str(), e.oplist.c_str());
-		return -1;
+		wprintf(L"error: %s\ncurrent operation: %s\n", e.message.c_str(), e.oplist.c_str());
+		::Sleep(10000);
+		return -1; 
 	}
 
 	return 0;

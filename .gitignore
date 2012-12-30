@@ -5,3 +5,4 @@ Debug
 Release
 ipch
 /build/*.user
+/build/symview.aps
