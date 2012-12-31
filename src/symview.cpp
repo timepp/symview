@@ -68,6 +68,16 @@ struct SymEnumContext
 	int symCount;
 };
 
+static std::wstring GetDir(const std::wstring& path)
+{
+	size_t index = path.find_last_of(L'\\');
+	if (index != std::wstring::npos)
+	{
+		return path.substr(0, index);
+	}
+	return L"";
+}
+
 bool RemoveSubStr(std::string& dest, const std::string& sub)
 {
 	size_t pos = dest.find(sub);
@@ -163,7 +173,7 @@ void OutputResult(const symlist_t& lst, const wchar_t* path)
 	if (fp != stdout)
 	{
 		fclose(fp);
-		wprintf(L"result are saved to file£º%s\n", path);
+		wprintf(L"result are saved to file: %s\n", path);
 	}
 }
 
@@ -364,6 +374,8 @@ void EnumPdbSymbol(std::wstring& pdbfile, PSYM_ENUMERATESYMBOLS_CALLBACKW callba
 {
 	OPBLOCK(std::wstring(tp::cz(L"process file [%s]", pdbfile.c_str())));
 	wprintf(L"process file[%s]\n", pdbfile.c_str());
+
+	::SymSetSearchPathW(::GetCurrentProcess(), GetDir(pdbfile).c_str());
 
 	DWORD len = 0;
 
