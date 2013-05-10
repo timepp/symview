@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{002A2DE9-8BB6-484D-9802-7E4AD4084715}") = "symview_d", "symview_d.visualdproj", "{2576805A-778F-42A0-9681-95C9BDFCC9A9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2576805A-778F-42A0-9681-95C9BDFCC9A9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2576805A-778F-42A0-9681-95C9BDFCC9A9}.Debug|Win32.Build.0 = Debug|Win32
+		{2576805A-778F-42A0-9681-95C9BDFCC9A9}.Release|Win32.ActiveCfg = Release|Win32
+		{2576805A-778F-42A0-9681-95C9BDFCC9A9}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
