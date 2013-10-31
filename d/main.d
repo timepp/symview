@@ -5,6 +5,7 @@ import std.getopt;
 import std.file;
 import std.path;
 import std.utf;
+import std.conv;
 import core.stdc.time;
 import std.datetime;
 import core.runtime;
@@ -30,7 +31,8 @@ int main(string[] args)
     dbghlp = DbgHelp.get();
     process_handle = GetCurrentProcess();
 
-    writeln("中国");
+    writeln("symview: convert information in pdb file to readable csv format.");
+	writeln("written in D programming language.");
 
     getopt(args, "verbose|v", &verbose);
 
@@ -76,7 +78,9 @@ SymInfo[] processfile(string path)
     context.baseAddress = base;
     context.fileSize = len;
     
+	writeln("begin enum symbols.");
     dbghlp.SymEnumSymbols(process_handle, base, null, cast(SymEnumFunc*)&EnumFunc, &context);
+	writeln("end enum symbols.");
 
     return context.syms;
 }
@@ -89,12 +93,15 @@ extern (Windows)
 {
     BOOL EnumFunc(SYMBOL_INFOW* info, ULONG len, PVOID param)
     {
+		string s();
+
+		/*
         SymEnumContext* context = cast(SymEnumContext*)param;
         SymInfo sym;
         sym.tag = info.Tag;
         sym.len = len > 0 ? len : info.Size;
         sym.addr = info.Address - context.baseAddress;
-        sym.srcline = 0;
+        sym.srcline = 0;ff
 
         // undercorate
         string undname = toUTF8(info.Name);
@@ -112,7 +119,7 @@ extern (Windows)
 
         context.symCount++;
         context.syms ~= sym;
-
+		*/
         return TRUE;
     }
 }
