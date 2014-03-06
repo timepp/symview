@@ -81,12 +81,12 @@ enum : DWORD
     IMAGE_FILE_MACHINE_AMD64 = 0x8664,
 }
 
-struct IMAGEHLP_LINE64
+struct IMAGEHLP_LINEW64
 {
     DWORD   SizeOfStruct;
     PVOID   Key;
     DWORD   LineNumber;
-    PTSTR   FileName;
+    PWSTR   FileName;
     DWORD64 Address;
 }
 
@@ -198,11 +198,11 @@ extern(System)
     alias BOOL    function(DWORD MachineType, HANDLE hProcess, HANDLE hThread, STACKFRAME64 *StackFrame, PVOID ContextRecord,
                              ReadProcessMemoryProc64 ReadMemoryRoutine, FunctionTableAccessProc64 FunctoinTableAccess,
                              GetModuleBaseProc64 GetModuleBaseRoutine, TranslateAddressProc64 TranslateAddress) StackWalk64Func;
-    alias BOOL    function(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, IMAGEHLP_LINE64 *line) SymGetLineFromAddr64Func;
+    alias BOOL    function(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, IMAGEHLP_LINEW64 *line) SymGetLineFromAddrW64Func;
     alias DWORD64 function(HANDLE hProcess, DWORD64 dwAddr) SymGetModuleBase64Func;
     alias BOOL    function(HANDLE hProcess, DWORD64 dwAddr, IMAGEHLP_MODULE64 *ModuleInfo) SymGetModuleInfo64Func;
     alias BOOL    function(HANDLE hProcess, DWORD64 Address, DWORD64 *Displacement, IMAGEHLP_SYMBOL64 *Symbol) SymGetSymFromAddr64Func;
-    alias DWORD   function(PCTSTR DecoratedName, PTSTR UnDecoratedName, DWORD UndecoratedLength, DWORD Flags) UnDecorateSymbolNameFunc;
+    alias DWORD   function(PCWSTR DecoratedName, PWSTR UnDecoratedName, DWORD UndecoratedLength, DWORD Flags) UnDecorateSymbolNameWFunc;
     alias DWORD64 function(HANDLE hProcess, HANDLE hFile, PCSTR ImageName, PCSTR ModuleName, DWORD64 BaseOfDll, DWORD SizeOfDll) SymLoadModule64Func;
     alias BOOL    function(HANDLE HProcess, PTSTR SearchPath, DWORD SearchPathLength) SymGetSearchPathFunc;
     alias BOOL    function(HANDLE hProcess, DWORD64 Address) SymUnloadModule64Func;
@@ -223,11 +223,11 @@ struct DbgHelp
     SymGetOptionsFunc        SymGetOptions;
     SymSetOptionsFunc        SymSetOptions;
     SymFunctionTableAccess64Func SymFunctionTableAccess64;
-    SymGetLineFromAddr64Func SymGetLineFromAddr64;
+    SymGetLineFromAddrW64Func SymGetLineFromAddrW64;
     SymGetModuleBase64Func   SymGetModuleBase64;
     SymGetModuleInfo64Func   SymGetModuleInfo64;
     SymGetSymFromAddr64Func  SymGetSymFromAddr64;
-    UnDecorateSymbolNameFunc UnDecorateSymbolName;
+    UnDecorateSymbolNameWFunc UnDecorateSymbolNameW;
     SymLoadModule64Func      SymLoadModule64;
     SymGetSearchPathFunc     SymGetSearchPath;
     SymUnloadModule64Func    SymUnloadModule64;
@@ -248,7 +248,7 @@ struct DbgHelp
             sm_inst.SymGetOptions            = cast(SymGetOptionsFunc) GetProcAddress(sm_hndl,"SymGetOptions");
             sm_inst.SymSetOptions            = cast(SymSetOptionsFunc) GetProcAddress(sm_hndl,"SymSetOptions");
             sm_inst.SymFunctionTableAccess64 = cast(SymFunctionTableAccess64Func) GetProcAddress(sm_hndl,"SymFunctionTableAccess64");
-            sm_inst.SymGetLineFromAddr64     = cast(SymGetLineFromAddr64Func) GetProcAddress(sm_hndl,"SymGetLineFromAddr64");
+            sm_inst.SymGetLineFromAddrW64    = cast(SymGetLineFromAddrW64Func) GetProcAddress(sm_hndl,"SymGetLineFromAddrW64");
             sm_inst.SymGetModuleBase64       = cast(SymGetModuleBase64Func) GetProcAddress(sm_hndl,"SymGetModuleBase64");
             sm_inst.SymGetModuleInfo64       = cast(SymGetModuleInfo64Func) GetProcAddress(sm_hndl,"SymGetModuleInfo64");
             sm_inst.SymGetSymFromAddr64      = cast(SymGetSymFromAddr64Func) GetProcAddress(sm_hndl,"SymGetSymFromAddr64");
@@ -259,9 +259,10 @@ struct DbgHelp
             sm_inst.ImagehlpApiVersion       = cast(ImagehlpApiVersionFunc) GetProcAddress(sm_hndl, "ImagehlpApiVersion");
             sm_inst.SymEnumSymbols           = cast(SymEnumSymbolsFunc) GetProcAddress(sm_hndl, "SymEnumSymbolsW");
             sm_inst.SymSetSearchPath         = cast(SymSetSearchPathWFunc) GetProcAddress(sm_hndl, "SymSetSearchPathW");
+            sm_inst.UnDecorateSymbolNameW    = cast(UnDecorateSymbolNameWFunc) GetProcAddress(sm_hndl, "UnDecorateSymbolNameW");
 
             assert( sm_inst.SymInitialize && sm_inst.SymCleanup && sm_inst.StackWalk64 && sm_inst.SymGetOptions &&
-                    sm_inst.SymSetOptions && sm_inst.SymFunctionTableAccess64 && sm_inst.SymGetLineFromAddr64 &&
+                    sm_inst.SymSetOptions && sm_inst.SymFunctionTableAccess64 && sm_inst.SymGetLineFromAddrW64 &&
                     sm_inst.SymGetModuleBase64 && sm_inst.SymGetModuleInfo64 && sm_inst.SymGetSymFromAddr64 &&
                     sm_inst.SymLoadModule64 && sm_inst.SymGetSearchPath && sm_inst.SymUnloadModule64 &&
                     sm_inst.SymRegisterCallback64 && sm_inst.ImagehlpApiVersion);

@@ -10,7 +10,10 @@ import core.stdc.time;
 import std.datetime;
 import core.runtime;
 import core.sys.windows.windows;
+import core.stdc.string;
 import timeppdbghelp;
+import std.string;
+import std.algorithm;
 
 HANDLE process_handle;
 bool verbose = true;
@@ -25,6 +28,44 @@ struct SymInfo
     size_t len;
     uint   tag;
 };
+
+string FromCStr(wchar* cstr)
+{
+    immutable wchar* icstr = cast(immutable wchar*) cstr;
+    wstring str = icstr[0..wcslen(icstr)];
+    return to!string(str);
+}
+
+string UndecorateConstantString(string name)
+{
+    name = name[6..$];
+    bool ansi = (name[0] == '0');
+    bool extraAt = (name[1] < '0' || name[1] > '9');
+    auto index = name.indexOf('@');
+    name = name[index+1..$];
+    if (extraAt)
+    {
+        index = name.indexOf('@');
+        name = name[index+1..$];
+    }
+
+}
+
+string Undecorate(string name)
+{
+    if (name[0] != '?') return name;
+
+    if (name.startsWith("??_C@"))
+    {
+        return UndecorateConstantString(name);
+    }
+    else
+    {
+        wchar[1024] undname;
+        dbghlp.UnDecorateSymbolNameW(name.toUTF16z(), &undname, undname.length, 0);
+        return FromCStr(cast(wchar*)undname);
+    }
+}
 
 int main(string[] args)
 {
@@ -44,6 +85,10 @@ int main(string[] args)
     for (uint i = 1; i < args.length; i++)
     {
         auto syms = processfile(args[i]);
+        foreach (ref s; syms)
+        {
+            s.name = Undecorate(s.name);
+        }
         SaveToCSV(syms);
     }
     
@@ -93,33 +138,33 @@ extern (Windows)
 {
     BOOL EnumFunc(SYMBOL_INFOW* info, ULONG len, PVOID param)
     {
-		string s();
-
-		/*
-        SymEnumContext* context = cast(SymEnumContext*)param;
         SymInfo sym;
+        sym.name = FromCStr(cast(wchar*)info.Name);
         sym.tag = info.Tag;
         sym.len = len > 0 ? len : info.Size;
+        sym.srcline = 0;
+
+        IMAGEHLP_LINEW64 line;
+		line.SizeOfStruct = line.sizeof;
+		DWORD dis;
+		BOOL ret = dbghlp.SymGetLineFromAddrW64(process_handle, info.Address, &dis, &line);
+		if (ret)
+		{
+			sym.srcfile = FromCStr(line.FileName);
+			sym.srcline = line.LineNumber;
+		}
+		else
+		{
+			sym.srcfile = "no_source_info";
+		}
+
+        SymEnumContext* context = cast(SymEnumContext*)param;
         sym.addr = info.Address - context.baseAddress;
-        sym.srcline = 0;ff
-
-        // undercorate
-        string undname = toUTF8(info.Name);
-        if (undname[0] == '?')
-        {
-            if (undname[0..4] == "??_C@")
-            {
-            }
-            else
-            {
-            }
-        }
-
-        sym.name = undname;
-
         context.symCount++;
         context.syms ~= sym;
-		*/
+
+        // TODO: update progress here
+
         return TRUE;
     }
 }

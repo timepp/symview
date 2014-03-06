@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "symview", "symview.vcxproj", "{0C4C9FF6-57CD-483E-9E3C-ECD91689CFE1}"
 EndProject
+Project("{002A2DE9-8BB6-484D-9802-7E4AD4084715}") = "symview_d", "..\d\symview_d.visualdproj", "{2576805A-778F-42A0-9681-95C9BDFCC9A9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -13,6 +15,10 @@ Global
 		{0C4C9FF6-57CD-483E-9E3C-ECD91689CFE1}.Debug|Win32.Build.0 = Debug|Win32
 		{0C4C9FF6-57CD-483E-9E3C-ECD91689CFE1}.Release|Win32.ActiveCfg = Release|Win32
 		{0C4C9FF6-57CD-483E-9E3C-ECD91689CFE1}.Release|Win32.Build.0 = Release|Win32
+		{2576805A-778F-42A0-9681-95C9BDFCC9A9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2576805A-778F-42A0-9681-95C9BDFCC9A9}.Debug|Win32.Build.0 = Debug|Win32
+		{2576805A-778F-42A0-9681-95C9BDFCC9A9}.Release|Win32.ActiveCfg = Release|Win32
+		{2576805A-778F-42A0-9681-95C9BDFCC9A9}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
